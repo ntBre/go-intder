@@ -1,0 +1,36 @@
+Delay using this for now, I may end up doing something different with
+the input file anyway
+
+#+begin_src go
+  // integer absolute value
+  func iabs(i int) int {
+	  if i < 0 {
+		  return -i
+	  }
+	  return i
+  }
+
+  // value of a with the sign of b
+  func isign(a, b int) int {
+	  if b < 0 {
+		  return -a
+	  }
+	  return a
+  }
+
+  // update config based on other values, from intder.f
+  if conf[NVEC] != 0 {
+	  conf[NEQ] = 1
+  }
+  if iabs(conf[NTEST]) == 3 {
+	  conf[NSTOP] = 1
+	  conf[NINV] = isign(1, conf[NTEST])
+  }
+  if iabs(conf[NINV]) == 3 {
+	  conf[NEQ] = 0
+	  conf[NVEC] = 0
+	  // GOTO 117 ?? skips ahead a bit but not sure what to
+	  // do here TODO
+  }
+
+#+end_src
