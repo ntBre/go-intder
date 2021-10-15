@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
+
+	"gonum.org/v1/gonum/mat"
 )
 
 // Input options, see the manual for additional details
@@ -62,33 +65,9 @@ func (s Siic) String() string {
 	return str.String()
 }
 
-func toInt(ss []string) []int {
-	ret := make([]int, 0, len(ss))
-	for _, s := range ss {
-		i, err := strconv.Atoi(s)
-		if err != nil {
-			panic(err)
-		}
-		ret = append(ret, i)
-	}
-	return ret
-}
-
-func toFloat(ss []string) []float64 {
-	ret := make([]float64, 0, len(ss))
-	for _, s := range ss {
-		i, err := strconv.ParseFloat(s, 64)
-		if err != nil {
-			panic(err)
-		}
-		ret = append(ret, i)
-	}
-	return ret
-}
-
 // ReadInput reads an intder input file. TODO handle freqs input
 func ReadInput(filename string) (conf Config, siics []Siic, syics [][]int,
-	carts []float64) {
+	carts []float64, disps [][]float64) {
 	f, err := os.Open(filename)
 	defer f.Close()
 	if err != nil {
@@ -96,13 +75,33 @@ func ReadInput(filename string) (conf Config, siics []Siic, syics [][]int,
 	}
 	scanner := bufio.NewScanner(f)
 	var (
-		handler func([]string)
-		line    string
-		fields  []string
+		handler  func([]string)
+		line     string
+		fields   []string
+		dispHold []float64
 	)
+	zero := regexp.MustCompile(`^\s*0\s*$`)
+	dispHandler := func(s []string) {
+		if len(s) == 0 {
+			handler = nil
+		} else if zero.MatchString(line) {
+			disps = append(disps, dispHold)
+			dispHold = make([]float64, 0)
+		} else {
+			d, err := strconv.Atoi(s[0])
+			if err != nil {
+				panic(err)
+			}
+			f, err := strconv.ParseFloat(s[1], 64)
+			if err != nil {
+				panic(err)
+			}
+			dispHold = extend(dispHold, d-1, f)
+		}
+	}
 	cartHandler := func(s []string) {
 		if strings.Contains(line, "DISP") {
-			handler = nil
+			handler = dispHandler
 			return
 		}
 		carts = append(carts, toFloat(s)...)
@@ -169,6 +168,14 @@ func Sub(a, b []float64) (ret []float64) {
 	return ret
 }
 
+// Add returns the vector sum of a and b
+func Add(a, b []float64) (ret []float64) {
+	for i := range a {
+		ret = append(ret, a[i]+b[i])
+	}
+	return ret
+}
+
 // Dot returns the dot product of a and b
 func Dot(a, b []float64) (dot float64) {
 	for i := range a {
@@ -184,14 +191,6 @@ func Mag(a []float64) (mag float64) {
 		mag += v
 	}
 	return math.Sqrt(mag)
-}
-
-func toDeg(a float64) float64 {
-	return a * 180.0 / math.Pi
-}
-
-func toRad(a float64) float64 {
-	return a * math.Pi / 180.0
 }
 
 // SiICVals computes the values of the simple internal coordinates at
@@ -218,22 +217,6 @@ func SiICVals(siics []Siic, carts []float64) (ret []float64) {
 	return ret
 }
 
-// integer absolute value
-func iabs(i int) int {
-	if i < 0 {
-		return -i
-	}
-	return i
-}
-
-// value of a with the sign of b
-func isign(a, b int) int {
-	if b < 0 {
-		return -a
-	}
-	return a
-}
-
 func SyICVals(syics [][]int, siics []float64) (ret []float64) {
 	var f, sum float64
 	for _, s := range syics {
@@ -254,7 +237,34 @@ func SyICVals(syics [][]int, siics []float64) (ret []float64) {
 	return
 }
 
+func Disp(siics []Siic, syics, carts []float64, disps [][]float64) (ret [][]float64) {
+	// I think vect1 computes the vector from a to b
+	for _, d := range disps {
+		fmt.Println(Add(d, syics))
+		ret = append(ret, Add(d, syics))
+	}
+	Machb(3, 9, 3)
+	return
+}
+
+// nad = num atoms + num dummies = total atoms, nc = num coords =
+// 3*natoms, ns = nSICs
+func Machb(nad, nc, ns int) {
+	// I'm trying to figure out how the B matrix is assembled,
+	// some leads in notes.org. Once I have that, compare the
+	// determinant to what is reported in the output file
+
+	// after that, need to figure out how the A matrix is obtained
+	// from the B matrix, presumably by inverting B or B*Bt
+	B := mat.NewDense(ns, nc, nil)
+	for i := 0; i < ns; i++ {
+		for j := 0; j < nc; j++ {
+		}
+	}
+	fmt.Println(B)
+}
+
 func main() {
-	conf, siics, syics, carts := ReadInput("intder.in")
-	fmt.Println(conf, siics, syics, carts)
+	conf, siics, syics, carts, disps := ReadInput("intder.in")
+	fmt.Println(conf, siics, syics, carts, disps)
 }
