@@ -158,14 +158,44 @@ func At(matr []float64, i, j int) float64 {
 
 // Stre computes the distance between a and b
 func Stre(a, b []float64) float64 {
-	var sum float64
-	for i := range a {
-		diff := a[i] - b[i]
-		sum += diff * diff
-	}
-	return math.Sqrt(sum)
+	return Mag(Sub(a, b))
 }
 
+// Sub returns the vector distance between a and b
+func Sub(a, b []float64) (ret []float64) {
+	for i := range a {
+		ret = append(ret, a[i]-b[i])
+	}
+	return ret
+}
+
+// Dot returns the dot product of a and b
+func Dot(a, b []float64) (dot float64) {
+	for i := range a {
+		dot += a[i] * b[i]
+	}
+	return
+}
+
+// Mag returns the magnitude of a
+func Mag(a []float64) (mag float64) {
+	for _, v := range a {
+		v *= v
+		mag += v
+	}
+	return math.Sqrt(mag)
+}
+
+func toDeg(a float64) float64 {
+	return a * 180.0 / math.Pi
+}
+
+func toRad(a float64) float64 {
+	return a * math.Pi / 180.0
+}
+
+// SiICVals computes the values of the simple internal coordinates at
+// a given cartesian geometry
 func SiICVals(siics []Siic, carts []float64) (ret []float64) {
 	for _, s := range siics {
 		switch s.Type {
@@ -174,11 +204,54 @@ func SiICVals(siics []Siic, carts []float64) (ret []float64) {
 			d := Stre(carts[a:a+3], carts[b:b+3])
 			ret = append(ret, d*BOHR)
 		case "BEND":
+			// b is the central atom
+			a, b, c := 3*(s.Atoms[0]-1), 3*(s.Atoms[1]-1), 3*(s.Atoms[2]-1)
+			// cosΘ = ba·bc / ||ba||×||bc||
+			ba := Sub(carts[b:b+3], carts[a:a+3])
+			bc := Sub(carts[b:b+3], carts[c:c+3])
+			ret = append(ret, math.Acos(Dot(ba, bc)/(Mag(ba)*Mag(bc))))
+			// TODO the rest of the coordinate types
 		default:
 			panic("unrecognized internal coordinate type")
 		}
 	}
 	return ret
+}
+
+// integer absolute value
+func iabs(i int) int {
+	if i < 0 {
+		return -i
+	}
+	return i
+}
+
+// value of a with the sign of b
+func isign(a, b int) int {
+	if b < 0 {
+		return -a
+	}
+	return a
+}
+
+func SyICVals(syics [][]int, siics []float64) (ret []float64) {
+	var f, sum float64
+	for _, s := range syics {
+		sum = 0
+		switch len(s) {
+		case 1:
+			f = 1
+		case 2:
+			f = 1 / math.Sqrt2
+		default:
+			panic("unrecognized internal coordinate type")
+		}
+		for _, t := range s {
+			sum += float64(isign(1, t)) * f * siics[iabs(t)-1]
+		}
+		ret = append(ret, sum)
+	}
+	return
 }
 
 func main() {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"reflect"
 	"testing"
 )
@@ -37,13 +38,37 @@ func TestReadInput(t *testing.T) {
 	}
 }
 
+func nearby(a, b []float64, eps float64) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if math.Abs(a[i]-b[i]) > eps {
+			return false
+		}
+	}
+	return true
+}
+
 func TestSiICVals(t *testing.T) {
 	_, siics, _, carts := ReadInput("intder.in")
 	got := SiICVals(siics, carts)
 	want := []float64{
-		0.9586143064, 0.9586143064, 104.4010205969,
+		0.9586143064, 0.9586143064, toRad(104.4010205969),
 	}
-	if !reflect.DeepEqual(got, want) {
+	if !nearby(got, want, 1e-10) {
+		t.Errorf("got %v, wanted %v\n", got, want)
+	}
+}
+
+func TestSyICVals(t *testing.T) {
+	_, siics, syics, carts := ReadInput("intder.in")
+	sics := SiICVals(siics, carts)
+	got := SyICVals(syics, sics)
+	want := []float64{
+		1.3556853532, 1.8221415519, 0.0000000000,
+	}
+	if !nearby(got, want, 1e-10) {
 		t.Errorf("got %v, wanted %v\n", got, want)
 	}
 }
