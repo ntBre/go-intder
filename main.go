@@ -65,6 +65,15 @@ func (s Siic) String() string {
 	return str.String()
 }
 
+/*
+
+   NC is 3*Natoms
+   NS is number of simple internals
+
+   IU is array of size NS x 2
+
+*/
+
 // ReadInput reads an intder input file. TODO handle freqs input
 func ReadInput(filename string) (conf Config, siics []Siic, syics [][]int,
 	carts []float64, disps [][]float64) {
@@ -150,7 +159,7 @@ func ReadInput(filename string) (conf Config, siics []Siic, syics [][]int,
 	return
 }
 
-// At accesses matr as if it were a nx3 matrix
+// At accesses matr as if it were an nx3 matrix
 func At(matr []float64, i, j int) float64 {
 	return matr[3*i+j]
 }
